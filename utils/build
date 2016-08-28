@@ -1,0 +1,77 @@
+#!/bin/sh -e
+# $A-linux-musl -> $A-alpine-linux-musl //if run this on alpine.
+
+: ${A:=$(uname -m)}
+export A
+
+: ${top:=`pwd`}
+: ${out:=$top/out}
+: ${work:=$top/work}
+: ${srcdir:=$top/src}
+: ${patchdir:=$top/patches}
+
+fetch() {
+	if [ "x$md5sum" != "x" ];then
+		if [ !-e "$srcdir/$src" -o "$(md5sum $srcdir/$src)" != "$md5sum  $srcdir/$src" ];then
+			wget --passive-ftp "$url" -O "$srcdir/$src"
+		fi
+	else
+		test -e "$srcdir/$src" || wget "$url" -O "$srcdir/$src"
+	fi
+}
+
+unpack() {
+	cd "$work"
+	tar -xf "$srcdir/$src"
+	: ${unpack:=$(basename $(basename $(basename $(basename "$src" .gz) .bz2) .xz) .tar)}
+	cd "$unpack"
+}
+
+prep() {
+	for x in $patches;do
+		patch -p1 <"$patchdir/$x"
+	done
+}
+
+config() {
+	if [ -x configure ];then
+		munge-config-sub $config_sub
+		./configure --prefix= --host=$A-linux-musl \
+			--target=$A-linux-musl $config_options
+	fi
+}
+
+build() {
+	make
+}
+
+install() {
+	make DESTDIR="$tmp" install
+}
+
+stage() {
+	:
+}
+
+name=$(printf '%s' "$(basename "$1")" | sed 's|-[^-]*$||')
+version=$(printf '%s' "$(basename "$1")" | sed 's|[^-]*-||g')
+
+. "$(dirname $1)/$(basename $1)"
+: ${src:=$(printf '%s' "$url"|sed 's|[^/]*/||g')}
+: ${unpack:=$name-$version}
+(
+	fetch
+	unpack
+	prep
+	config
+	build
+	tmp=`mktemp -d`
+	install
+	stage
+	if [ -n "`ls "$tmp"`" ]; then
+		cp -rv "$tmp"/* "$out"
+	fi
+	rm -rf "$tmp"
+	cd "$top"
+	rm -rf "$work/$unpack"
+)

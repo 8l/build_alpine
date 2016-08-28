@@ -1,0 +1,22 @@
+url=http://busybox.net/downloads/$name-$version.tar.bz2
+
+patches=busybox-musl-fixes.patch
+
+export CROSS_COMPILE="$A-linux-musl-"
+
+config() {
+	make allnoconfig KCONFIG_ALLCONFIG="$top"/busybox.config
+	ln -s ../../../out/include/linux ./include/linux
+	ln -s ../../../out/include/asm ./include/asm
+	ln -s ../../../out/include/asm-generic ./include/asm-generic	
+}
+
+install() {
+	make busybox.links
+	mkdir -p "$tmp"/bin
+	cp busybox "$tmp"/bin/busybox
+
+	cat busybox.links | while read line;do
+		ln -sf busybox "$tmp"/bin/"$(basename $line)"
+	done
+}

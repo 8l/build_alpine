@@ -1,0 +1,28 @@
+    This is a complete, self-bootstrapping musl-based Linux system. It
+contains nothing more than Linux, Busybox, Binutils, GCC, GMP, MPFR,
+MPC, and GNU Make. I haven't attempted to minimize the configuration
+of these (yet), merely the package set. The programs get static-linked,
+but musl does install a dynamic linker, and GCC should be able to link
+programs against it.
+
+    To build this from a non-musl Linux system, you will need to
+execute ./bootstrap.sh. This will build musl and a cross compiler,
+and then build the system against it, placing the result in ./out.
+
+    ./make_fs.sh can be used to generate a bootable ext2 filesystem
+from the out directory. To use it, you will need the "genext2fs" program
+installed. If you don't feel like using it, you can just copy the files
+onto a filesystem of your choice and boot it.
+
+Some todos:
+ * bootloader merge
+   
+bootstrap-linux build prerequisites:   
+ * musl-cross 
+   https://github.com/8l/musl-cross
+ * genext2fs
+   sudo apt-get install genext2fs
+   
+Building bootstrap-linux:
+ ./bootstrap.sh
+

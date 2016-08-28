@@ -1,0 +1,32 @@
+url=http://www.kernel.org/pub/linux/kernel/v3.0/linux-$version.tar.bz2
+
+patches="linux-noperl-capflags.patch linux-noperl-headers.patch linux-noperl-timeconst.patch linux-posix-sed.patch linux-workaround-old-gcc.patch"
+
+export CROSS_COMPILE="$A-linux-musl-"
+ARCH=$A
+[ "$ARCH" = "i686" ] && ARCH=i386
+export ARCH
+
+config() {
+	make allnoconfig KCONFIG_ALLCONFIG="$top/linux.config"
+}
+
+build() {
+	make INSTALL_HDR_PATH=dest headers_install
+	find dest/include \( -name .install -o -name ..install.cmd \) -delete
+	
+	make
+}
+
+install() {
+	mkdir -p "$tmp"/boot
+	cp System.map "$tmp"/boot
+	if [ "$ARCH" = "i386" -o "$ARCH" = "x86_64" ];then
+		cp arch/x86/boot/bzImage "$tmp"/boot/vmlinuz-$version
+	else
+		cp arch/$ARCH/boot/bzImage "$tmp"/boot/vmlinuz-$version
+	fi
+
+	mkdir -p "$tmp"/include/
+	cp -rv dest/include/* "$tmp"/include/
+}
